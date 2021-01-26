@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>
+    <%= title %>
+  </title>
+  <link rel='stylesheet' href='/stylesheets/style.css' />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+
+
+  <!-- JS, Popper.js, and jQuery -->
+  <script src="https://code.jquery.com/jquery-3.5.1.js" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc="
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"
+    integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN"
+    crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
+    integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV"
+    crossorigin="anonymous"></script>
+
+
+</head>
+
+<body>
+
+  <h1 id="title" class="text-center">
+    <%= title %>
+  </h1>
+  <h2 id="Welcome" class="text-center"> Welcome to <%=title %>
+  </h2>
+  <br>
+
+  <div id="loading" class="flex-column align-items-center">
+    <div class="kinetic"></div>
+    <br>
+    <h5>LOADING...</h2>
+  </div>
+
+  <div id="imgupload" class="text-center">
+    <h3>Upload an image to try Vision API now!!!</h3>
+    <!-- <button class="btn btn-primary" id="upload">upload</button> -->
+    <br>
+    <div class="row" id="chooseImg">
+      <div class="col-12 col-md-6 mx-auto">
+        <div class="custom-file">
+          <input type="file" class="custom-file-input" data-target="file-uploader" id="file-uploader">
+          <label class="custom-file-label" for="customFile">Choose file</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+  <div id="image_result_block">
+
+
+    <div class="card text-center d-block h-90">
+      <div class="card-header h-10">
+        <ul class="nav nav-pills card-header-pills" id="myTab" role="tablist">
+
+
+        </ul>
+      </div>
+      <div class="card-body h-90">
+
+        <div class="tab-content h-100" id="myTabContent">
+
+
+        </div>
+      </div>
+    </div>
+    <br>
+
+    <div class="d-flex flex-row justify-content-end h-10">
+      <button class="btn btn-secondary" id="resetBtn">
+        <i class="fa fa-retweet fa-lg"></i> RESET</button>
+    </div>
+  </div>
+
+  <script>
+
+    $("#image_result_block").hide();
+    console.log("hide loading");
+    $("#loading").hide();
+    setUploading(false);
+
+    function setUploading(isUploading) {
+      if (isUploading === true) {
+        $("#loading").show();
+      } else {
+        $("#loading").hide();
+      }
+    }
+
+
+
+    function blobToBase64(blob, cb) {
+      console.log(blob);
+      var reader = new window.FileReader();
+      reader.readAsDataURL(blob);
+      reader.onloadend = function () {
+        //console.log(reader.result);
+        cb(reader.result);
+      }
+    }
+
+    const fileUploader = document.querySelector('#file-uploader');
+
+    fileUploader.addEventListener('change', (e) => {
+      //console.log(e.target.files); // get file object
+
+      const file = e.target.files[0];
+      if (!file) return;
+      blobToBase64(file, function (b64) {
+        //console.log(b64);
+        b64 = b64.replace('data:image/jpeg;base64,', '');
+        callVision(b64);
+      });
+
+      $("#chooseImg").hide();
+      setUploading(true);
+
+    });
+
+
+    $("#resetBtn").click(function () {
+
+      $("#myTab").html("");
+      $("#myTabContent").html("");
+      $("#image_result_block").hide();
+      $("#chooseImg").show();
+    })
+
+
+    function callVision(b64) {
+      request = {
+        "requests": [
+          {
+            "image": { "content": b64 },
+            "features": [
+              {
+                "type": "TYPE_UNSPECIFIED",
+                "maxResults": 50
+              },
+              {
+                "type": "LANDMARK_DETECTION",
+                "maxResults": 50
+              },
+              {
+                "type": "FACE_DETECTION",
+                "maxResults": 50
+              },
+              {
+                "type": "LABEL_DETECTION",
+                "maxResults": 50
+              },
+              {
+                "type": "TEXT_DETECTION",
+                "maxResults": 50
+              },
+              {
+                "type": "SAFE_SEARCH_DETECTION",
+                "maxResults": 50
+              },
+              {
+                "type": "IMAGE_PROPERTIES",
+                "maxResults": 50
+              },
+              {
+                "maxResults": 10,
+                "type": "OBJECT_LOCALIZATION"
+              },
+            ]
+          }
+        ]
+      };
+      var api_key = 'AIzaSyDmjRI-My_RrKruZc9VSWpz3EFIgQGsgOg'
+      $.ajax({
+        type: "POST",
+        url: 'https://vision.googleapis.com/v1/images:annotate?key=' + api_key,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        dataType: "json",
+        data: JSON.stringify(request),
+        processData: false,
+        error: function (err) {
+          console.log("failed");
+        },
+        success: function (data) {
+
+          console.log(data);
+
+
+          if (data.responses[0].labelAnnotations) {
+            var labeldata = data.responses[0].labelAnnotations
+            console.log(labeldata)
+            showLabel(labeldata)
+          }
+          if (data.responses[0].faceAnnotations) {
+            var facedata = data.responses[0].faceAnnotations[0]
+            console.log(facedata)
+            showFace(facedata)
+          }
+
+          if (data.responses[0].textAnnotations) {
+            var textdata = data.responses[0].textAnnotations
+            console.log(textdata)
+            showText(textdata)
+          }
+          setUploading(false);
+          $("#image_result_block").show();
+
+        }
+      });
+    };
+    function showText(textdata) {
+      $("#myTab").append(`
+      <li class="nav-item">
+            <a class="nav-link" id="text-tab" data-toggle="tab" href="#text" role="tab" aria-controls="text"
+              aria-selected="false">text</a>
+          </li>
+      `)
+      $("#myTabContent").append(`
+      <div class="tab-pane fade" id="text" role="tabpanel" aria-labelledby="text-tab">
+      </div>
+      `)
+      textdata.forEach(text => {
+        $("#text").append(`
+        <div class="row">
+              <div class="col">${text.description}</div>
+            </div>
+            <hr>
+            `)
+      });
+
+    }
+    function showLabel(labeldata) {
+      $("#myTab").append(`
+      <li class="nav-item">
+            <a class="nav-link active" id="label-tab" data-toggle="tab" href="#label" role="tab" aria-controls="label"
+              aria-selected="true">label</a>
+          </li>
+      `)
+      $("#myTabContent").append(`
+      <div class="tab-pane fade active show" id="label" role="tabpanel" aria-labelledby="label-tab">
+      </div>
+      `)
+      labeldata.forEach(label => {
+        $("#label").append(`
+        <div class="row">
+              <div class="col">${label.description}:</div>
+              <div class="col">${label.score}%</div>
+            </div>
+            <hr>
+            `)
+      });
+    }
+
+    function showFace(facedata) {
+      console.log("append nav pill")
+      $("#myTab").append(`
+      <li class="nav-item">
+            <a class="nav-link" id="face-tab" data-toggle="tab" href="#face" role="tab" aria-controls="face"
+              aria-selected="false">face</a>
+          </li>
+      `)
+      $("#myTabContent").append(`
+      <div class="tab-pane fade show active" id="face" role="tabpanel" aria-labelledby="face-tab">
+            <div class="row">
+              <div class="col">joy</div>
+              <div class="col" id="joyinfo">${facedata.joyLikelihood}</div>
+            </div>
+            <hr>
+            <div class="row">
+              <div class="col">sorrow</div>
+              <div class="col" id="sorrowinfo">${facedata.sorrowLikelihood}</div>
+            </div>
+            <hr>
+            <div class="row">
+              <div class="col">anger</div>
+              <div class="col" id="angerinfo">${facedata.angerLikelihood}</div>
+            </div>
+            <hr>
+            <div class="row">
+              <div class="col">surprise</div>
+              <div class="col" id="surpriseinfo">${facedata.surpriseLikelihood}</div>
+            </div>
+            <hr>
+            <div class="row">
+              <div class="col">headwear</div>
+              <div class="col" id="headwearinfo">${facedata.headwearLikelihood}</div>
+            </div>
+            <hr>
+            <div class="row">
+              <div class="col">confidence</div>
+              <div class="col" id="confidenceinfo">${facedata.detectionConfidence}%</div>
+            </div>
+          </div>
+      `)
+
+
+
+    }
+
+
+
+
+
+
+  </script>
+</body>
+
+</html>
